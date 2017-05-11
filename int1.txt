@@ -116,7 +116,7 @@
 #4d4d4d
 #e6e6e6
 #4d4d4d
-#f5f5f5
+#f4f4f4
 #757575
 #aaaaaa
 #e6e6e6
