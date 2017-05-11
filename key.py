@@ -8,13 +8,13 @@ from electrum_ltc import bitcoin
 TARGET = 'LartGjF6UjmvmF1JXBhFf5wtM9uZX7LzeS'
 
 def read_bitmap(f):
-    bitmap = [{}, {}]
+    bitmap = {} # initial, color => to
     for line in open(f):
-	group, color, to = line.split()
-	group, to = int(group), int(to)
-	if color in bitmap[group]:
-	    print("duplicate", group, color, to)
-	bitmap[group][color] = to
+	initial, color, to = line.split()
+	initial, to = int(initial), int(to)
+	if (initial, color) in bitmap:
+	    print("duplicate", initial, color)
+	bitmap[(initial, color)] = to
     return bitmap
 
 def read_colors(f):
@@ -56,7 +56,7 @@ int1 = read_colors('int1.txt')
 #print(set(bitmap[1].keys()) - set(int1))
 
 # transform
-extbits = [bitmap[0].get(color, 0) for color in ext0]
-intbits = [bitmap[1].get(color, 1) for color in int1]
+extbits = [bitmap.get((0, color), 0) for color in ext0]
+intbits = [bitmap.get((1, color), 1) for color in int1]
 print(test(extbits + rotate(intbits, -1)))
 
