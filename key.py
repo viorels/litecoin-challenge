@@ -56,7 +56,11 @@ int1 = read_colors('int1.txt')
 #print(set(bitmap[1].keys()) - set(int1))
 
 # transform
-extbits = [bitmap.get((0, color), 0) for color in ext0]
-intbits = [bitmap.get((1, color), 1) for color in int1]
-print(test(extbits + rotate(intbits, -1)))
+allbits = []
+for i, color in enumerate(ext0 + int1):
+    bit = i / 128
+    new_bit = bitmap.get((bit, color), bit)
+    print(i, color, bit, new_bit)
+    allbits.append(new_bit)
+print(test(allbits))
 
