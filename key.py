@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import re
+import sys
 
 from electrum_ltc import bitcoin
 
@@ -25,6 +26,9 @@ def read_colors(f):
 	a.append(color)
     return a
 
+def rotate(l, n):
+    return l[n:] + l[:n]
+
 def int_bits_to_secret(int_bits):
     key_bits_str = ''.join(str(bit) for bit in int_bits)
     key_int = [int(byte, 2) for byte in re.findall('.{8}', key_bits_str)]
@@ -32,9 +36,15 @@ def int_bits_to_secret(int_bits):
     secret = bitcoin.SecretToASecret(key_str)
     return secret 
 
-def int_bits_to_address(int_bits):
-    secret = int_bits_to_secret(int_bits)
+def secret_to_address(secret):
     return bitcoin.address_from_private_key(secret)
+
+def test(int_bits):
+    secret = int_bits_to_secret(int_bits)
+    address = secret_to_address(secret)
+    if address == TARGET:
+        print("*** FOUND !!!", secret, address, file=sys.stderr)
+    return address
 
 bitmap = read_bitmap('map.txt')
 ext0 = read_colors('ext0.txt')
@@ -48,5 +58,5 @@ int1 = read_colors('int1.txt')
 # transform
 extbits = [bitmap[0].get(color, 0) for color in ext0]
 intbits = [bitmap[1].get(color, 1) for color in int1]
-print(int_bits_to_address(extbits + intbits))
+print(test(extbits + rotate(intbits, -1)))
 
