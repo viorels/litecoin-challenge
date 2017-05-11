@@ -44,23 +44,26 @@ def test(int_bits):
     address = secret_to_address(secret)
     if address == TARGET:
         print("*** FOUND !!!", secret, address, file=sys.stderr)
+        exit(0)
     return address
 
 bitmap = read_bitmap('map.txt')
 ext0 = read_colors('ext0.txt')
 int1 = read_colors('int1.txt')
 
-#print(set(ext0) - set(bitmap[0].keys()))
-#print(set(bitmap[0].keys()) - set(ext0))
-#print(set(int1) - set(bitmap[1].keys()))
-#print(set(bitmap[1].keys()) - set(int1))
+for rot in range(256):
+    # transform
+    allbits = []
+    used = set()
+#    for i, color in enumerate(rotate(list(reversed(int1)) + list(reversed(ext0)), rot)):
+    for i, color in enumerate(rotate(ext0 + int1, rot)):
+        bit = i % 2
+        new_bit = bitmap.get((bit, color), bit)
+        used |= set([(bit, color)])
+        allbits.append(new_bit)
+#        print(i, color, bit, new_bit)
+    print("UNUSED", set(bitmap.keys()) - used)
 
-# transform
-allbits = []
-for i, color in enumerate(ext0 + int1):
-    bit = i / 128
-    new_bit = bitmap.get((bit, color), bit)
-    print(i, color, bit, new_bit)
-    allbits.append(new_bit)
-print(test(allbits))
+    print(''.join(str(b) for b in allbits))
+    print(test(allbits))
 
