@@ -8,13 +8,12 @@ from electrum_ltc import bitcoin
 TARGET = 'LartGjF6UjmvmF1JXBhFf5wtM9uZX7LzeS'
 
 def read_bitmap(f):
-    bitmap = {} # initial, color => to
+    bitmap = {}
     for line in open(f):
 	initial, color, to = line.split()
 	initial, to = int(initial), int(to)
-	if (initial, color) in bitmap:
-	    print("duplicate", initial, color)
-	bitmap[(initial, color)] = to
+	bitmap[color] = to
+        bitmap[(color, initial)] = to
     return bitmap
 
 def read_colors(f):
@@ -43,27 +42,41 @@ def test(int_bits):
     secret = int_bits_to_secret(int_bits)
     address = secret_to_address(secret)
     if address == TARGET:
+        print("*** FOUND !!!", secret, address)
         print("*** FOUND !!!", secret, address, file=sys.stderr)
         exit(0)
     return address
 
+def map_colors(colors, start_bit):
+    bit = start_bit
+    bits = []
+    for i, color in enumerate(colors):
+        #print(i, color, bit)
+        bits.append(bit)
+        bit = bitmap[color]
+    assert bit == start_bit
+    return bits
+
 bitmap = read_bitmap('map.txt')
-ext0 = read_colors('ext0.txt')
-int1 = read_colors('int1.txt')
+ext_right = read_colors('ext0.txt') # ed does not map to last 0
+ext_left = list(reversed(rotate(ext_right, 1)))
+int_right = rotate(read_colors('int1.txt'), -1)
+int_left = list(reversed(rotate(int_right, 1)))
 
-for rot in range(256):
-    # transform
-    allbits = []
-    used = set()
-#    for i, color in enumerate(rotate(list(reversed(int1)) + list(reversed(ext0)), rot)):
-    for i, color in enumerate(rotate(ext0 + int1, rot)):
-        bit = i % 2
-        new_bit = bitmap.get((bit, color), bit)
-        used |= set([(bit, color)])
-        allbits.append(new_bit)
-#        print(i, color, bit, new_bit)
-    print("UNUSED", set(bitmap.keys()) - used)
+ext_bits_left = map_colors(ext_left, 0)
+int_bits_left = map_colors(int_left, 1)
+int_bits_right = map_colors(int_right, 1)
 
-    print(''.join(str(b) for b in allbits))
-    print(test(allbits))
+# TODO
+# 2 ext + int | int + ext
+# 2 ext_left + (int_right | int_left)
+# 128^2 rotate(ext) * rotate(int)
+
+combinations = [(ext_bits_left, int_bits_right), (ext_bits_left, int_bits_left), (int_bits_right, ext_bits_left), (int_bits_left, ext_bits_left)]
+for first, second in combinations:
+    for r1 in range(128):
+        for r2 in range(128):
+            allbits = rotate(first, r1) + rotate(second, r2)
+            print(r1, r2, ''.join(str(b) for b in allbits))
+            print(test(allbits))
 
