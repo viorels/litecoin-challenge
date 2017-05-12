@@ -4,6 +4,7 @@ import re
 import sys
 
 from electrum_ltc import bitcoin
+from multiprocessing import Pool, TimeoutError
 
 TARGET = 'LartGjF6UjmvmF1JXBhFf5wtM9uZX7LzeS'
 
@@ -44,8 +45,7 @@ def test(int_bits):
     if address == TARGET:
         print("*** FOUND !!!", secret, address)
         print("*** FOUND !!!", secret, address, file=sys.stderr)
-        exit(0)
-    return address
+        return secret
 
 def map_colors(colors, start_bit):
     bit = start_bit
@@ -67,16 +67,36 @@ ext_bits_left = map_colors(ext_left, 0)
 int_bits_left = map_colors(int_left, 1)
 int_bits_right = map_colors(int_right, 1)
 
+def try_rotate(first, second):
+    for r1 in range(128):
+        first_bits = rotate(first, r1)
+        for r2 in range(128):
+            allbits = first_bits + rotate(second, r2)
+            print(r1, r2, ''.join(str(b) for b in allbits))
+            secret = test(allbits)
+            if secret:
+                return secret
+
 # TODO
 # 2 ext + int | int + ext
 # 2 ext_left + (int_right | int_left)
 # 128^2 rotate(ext) * rotate(int)
 
 combinations = [(ext_bits_left, int_bits_right), (ext_bits_left, int_bits_left), (int_bits_right, ext_bits_left), (int_bits_left, ext_bits_left)]
-for first, second in combinations:
-    for r1 in range(128):
-        for r2 in range(128):
-            allbits = rotate(first, r1) + rotate(second, r2)
-            print(r1, r2, ''.join(str(b) for b in allbits))
-            print(test(allbits))
+
+if __name__ == '__main__':
+    pool = Pool(4)
+    results = []
+    for first, second in combinations:
+        results.append(pool.apply_async(try_rotate, (first, second)))
+
+    done = False
+    while not done:
+        for res in results:
+            try:
+                if res.get(1):
+                    done = True
+            except TimeoutError:
+                pass
+    pool.terminate()
 
